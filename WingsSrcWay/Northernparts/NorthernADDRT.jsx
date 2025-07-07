@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { View, Text, Image, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { View, Text, Image, TouchableOpacity, TextInput, ScrollView, Animated, Easing } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Calendar } from 'react-native-calendars';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { backarr, calendar, createPlaceBtn, movement, savePlaceBtn, wherearr } from '../Northernconst/wingsassts';
+import { common, route } from '../Northernconst/wingsstyles';
 
 const ROUTES_KEY = 'northern_routes';
 
@@ -12,9 +13,80 @@ const NorthernADDRT = () => {
     const navigation = useNavigation();
     const [startDate, setStartDate] = useState(new Date());
     const [startTime, setStartTime] = useState(new Date());
-    const [showCalendar, setShowCalendar] = useState(true);
+    const [showCalendar, setShowCalendar] = useState(false);
     const [startMove, setStartMove] = useState('');
     const [whereGoing, setWhereGoing] = useState('');
+
+    // Animation references
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideUpAnim = useRef(new Animated.Value(30)).current;
+    const backBtnRotate = useRef(new Animated.Value(0)).current;
+    const buttonScale = useRef(new Animated.Value(1)).current;
+    const inputAnimations = useRef({
+        date: new Animated.Value(0),
+        start: new Animated.Value(0),
+        where: new Animated.Value(0)
+    }).current;
+
+    // Initialize animations
+    React.useEffect(() => {
+        // Back button animation
+        Animated.spring(backBtnRotate, {
+            toValue: 1,
+            friction: 3,
+            tension: 40,
+            useNativeDriver: true
+        }).start();
+
+        // Main content animation
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 600,
+                useNativeDriver: true
+            }),
+            Animated.timing(slideUpAnim, {
+                toValue: 0,
+                duration: 600,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true
+            })
+        ]).start();
+
+        // Staggered input animations
+        Animated.stagger(150, [
+            Animated.timing(inputAnimations.date, {
+                toValue: 1,
+                duration: 500,
+                useNativeDriver: true
+            }),
+            Animated.timing(inputAnimations.start, {
+                toValue: 1,
+                duration: 500,
+                useNativeDriver: true
+            }),
+            Animated.timing(inputAnimations.where, {
+                toValue: 1,
+                duration: 500,
+                useNativeDriver: true
+            })
+        ]).start();
+    }, []);
+
+    const animateButtonPress = () => {
+        Animated.sequence([
+            Animated.timing(buttonScale, {
+                toValue: 0.95,
+                duration: 100,
+                useNativeDriver: true
+            }),
+            Animated.spring(buttonScale, {
+                toValue: 1,
+                friction: 3,
+                useNativeDriver: true
+            })
+        ]).start();
+    };
 
     const formatDateTime = () => {
         const date = startDate.toLocaleDateString('en-GB', {
@@ -32,18 +104,19 @@ const NorthernADDRT = () => {
         return `${date}, ${formattedHours}.${formattedMinutes} ${ampm}`;
     };
 
-        const formatDate = () => {
-            const date = startDate.toLocaleDateString('en-GB', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-            });
+    const formatDate = () => {
+        const date = startDate.toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+        });
 
-            return date;
-        };
-
+        return date;
+    };
 
     const addNewPlannedPlace = async () => {
+        animateButtonPress();
+        
         const newRoute = {
             id: Date.now(),
             route: `${startMove} → ${whereGoing}`,
@@ -58,89 +131,265 @@ const NorthernADDRT = () => {
             const existingRoutes = stored ? JSON.parse(stored) : [];
             const updatedRoutes = [...existingRoutes, newRoute];
             await AsyncStorage.setItem(ROUTES_KEY, JSON.stringify(updatedRoutes));
-            navigation.goBack();
+            
+            // Animate out before navigating back
+            Animated.parallel([
+                Animated.timing(fadeAnim, {
+                    toValue: 0,
+                    duration: 300,
+                    useNativeDriver: true
+                }),
+                Animated.timing(slideUpAnim, {
+                    toValue: -30,
+                    duration: 300,
+                    useNativeDriver: true
+                })
+            ]).start(() => navigation.goBack());
         } catch (err) {
             console.error('Failed to save route:', err);
         }
     };
 
+    const toggleCalendar = () => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true
+            }),
+            Animated.timing(slideUpAnim, {
+                toValue: 30,
+                duration: 300,
+                useNativeDriver: true
+            })
+        ]).start(() => {
+            setShowCalendar(!showCalendar);
+            // Reset animations for the next view
+            fadeAnim.setValue(0);
+            slideUpAnim.setValue(30);
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true
+            }).start();
+            Animated.timing(slideUpAnim, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true
+            }).start();
+        });
+    };
+
     return (
-        <View style={{ flex: 1, padding: 16 }}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-                <Image source={backarr} />
-            </TouchableOpacity>
+        <View style={common.container}>
+            
+            <Animated.View style={{
+                transform: [{
+                    rotate: backBtnRotate.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ['-90deg', '0deg']
+                    })
+                }],
+                width: 30, height: 30
+            }}>
+                <TouchableOpacity 
+                    onPress={() => navigation.goBack()} 
+                    style={[common.back, {top: 0, left: 0}]}
+                >
+                    <Image source={backarr} style={common.backIcon} />
+                </TouchableOpacity>
+            </Animated.View>
 
-            {showCalendar ? (
-                <View>
-                    <Text style={{ fontSize: 18, marginBottom: 12 }}>Select a start date</Text>
+            <Animated.View style={{
+                opacity: fadeAnim,
+                transform: [{ translateY: slideUpAnim }]
+            }}>
+                {showCalendar ? (
+                    <ScrollView style={{width: '100%'}}>
+                        <Animated.Text style={[
+                            common.title, 
+                            { 
+                                alignSelf: 'center', 
+                                fontSize: 22, 
+                                marginBottom: 35,
+                                opacity: fadeAnim
+                            }
+                        ]}>
+                            Select a start date
+                        </Animated.Text>
 
-                    <Calendar
-                        onDayPress={(day) => {
-                            const selected = new Date(day.year, day.month - 1, day.day);
-                            setStartDate(selected);
-                        }}
-                        markedDates={{
-                            [startDate.toISOString().split('T')[0]]: {
-                                selected: true,
-                                selectedColor: '#00adf5',
-                            },
-                        }}
-                    />
+                        <Animated.View style={{
+                            opacity: fadeAnim,
+                            transform: [{ scale: fadeAnim }]
+                        }}>
+                            <Calendar
+                                onDayPress={(day) => {
+                                    const selected = new Date(day.year, day.month - 1, day.day, 12);
+                                    setStartDate(selected);
+                                }}
+                                markedDates={{
+                                    [startDate.toISOString().split('T')[0]]: {
+                                        selected: true,
+                                        selectedColor: '#00adf5',
+                                    },
+                                }}
+                                style={{
+                                    borderRadius: 16,
+                                    marginBottom: 20,
+                                    width: '90%',
+                                    alignSelf: 'center',
+                                    overflow: 'hidden',
+                                }}
+                            />
 
-                    <View style={{ marginVertical: 20 }}>
-                        <Text style={{ fontSize: 18, marginBottom: 8 }}>Select a start time</Text>
-                        <DateTimePicker
-                            value={startTime}
-                            mode="time"
-                            display="default"
-                            onChange={(event, selectedTime) => {
-                                if (selectedTime) setStartTime(selectedTime);
-                            }}
-                        />
-                    </View>
+                            <DateTimePicker
+                                value={startTime}
+                                mode="time"
+                                display="spinner"
+                                themeVariant="dark" 
+                                onChange={(event, selectedTime) => {
+                                    if (selectedTime) setStartTime(selectedTime);
+                                }}
+                                style={{ width: '80%', alignSelf: 'center', marginBottom: 20 }}
+                            />
+                        </Animated.View>
 
-                    <TouchableOpacity onPress={() => setShowCalendar(false)}>
-                        <Image source={savePlaceBtn} />
-                    </TouchableOpacity>
-                </View>
-            ) : (
-                <ScrollView style={{ width: '100%' }}>
-                    <Text style={{ fontSize: 20, marginBottom: 16 }}>{showCalendar ? 'Start date of movement:' : 'CREATE ROUTE'}</Text>
+                        <Animated.View style={{
+                            opacity: fadeAnim,
+                            transform: [{ translateY: slideUpAnim }]
+                        }}>
+                            <TouchableOpacity 
+                                onPress={toggleCalendar}
+                                activeOpacity={0.7}
+                            >
+                                <Image source={savePlaceBtn} style={route.saveButton} />
+                            </TouchableOpacity>
+                        </Animated.View>
 
-                    <TouchableOpacity onPress={() => setShowCalendar(true)} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-                        <Image source={calendar} />
-                        <Text style={{ marginLeft: 8 }}>{formatDateTime()}</Text>
-                    </TouchableOpacity>
+                        <View style={{height: 100}} />
+                    </ScrollView>
+                ) : (
+                    <ScrollView style={{ width: '100%' }}>
+                        <Animated.Text style={[
+                            common.title, 
+                            { 
+                                alignSelf: 'center', 
+                                fontSize: 22, 
+                                marginBottom: 35,
+                                opacity: fadeAnim,
+                                transform: [{ translateY: slideUpAnim }]
+                            }
+                        ]}>
+                            CREATE ROUTE
+                        </Animated.Text>
 
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                        <Image source={movement} />
-                        <TextInput
-                            value={startMove}
-                            onChangeText={setStartMove}
-                            placeholder="Start of movement"
-                            placeholderTextColor="#666"
-                            style={{ marginLeft: 8, flex: 1, borderBottomWidth: 1 }}
-                        />
-                    </View>
+                        <Animated.View 
+                            style={[
+                                route.dateButton,
+                                {
+                                    opacity: inputAnimations.date,
+                                    transform: [
+                                        { 
+                                            translateX: inputAnimations.date.interpolate({
+                                                inputRange: [0, 1],
+                                                outputRange: [-50, 0]
+                                            }) 
+                                        }
+                                    ],
+                                    paddingLeft: 17
+                                }
+                            ]}
+                        >
+                            <TouchableOpacity
+                                onPress={toggleCalendar}
+                                activeOpacity={0.7}
+                                style={{ flexDirection: 'row', alignItems: 'center' }}
+                            >
+                                <Image source={calendar} style={[route.icon, {position: 'static', marginRight: 20}]} />
+                                <Text style={route.dateText}>{formatDateTime()}</Text>
+                            </TouchableOpacity>
+                        </Animated.View>
 
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                        <Image source={wherearr} />
-                        <TextInput
-                            value={whereGoing}
-                            onChangeText={setWhereGoing}
-                            placeholder="Where are we going?"
-                            placeholderTextColor="#666"
-                            style={{ marginLeft: 8, flex: 1, borderBottomWidth: 1 }}
-                        />
-                    </View>
+                        <Animated.View 
+                            style={[
+                                { 
+                                    flexDirection: 'row', 
+                                    alignItems: 'center', 
+                                    marginBottom: 12 
+                                },
+                                {
+                                    opacity: inputAnimations.start,
+                                    transform: [
+                                        { 
+                                            translateX: inputAnimations.start.interpolate({
+                                                inputRange: [0, 1],
+                                                outputRange: [-50, 0]
+                                            }) 
+                                        }
+                                    ]
+                                }
+                            ]}
+                        >
+                            <Image source={movement} style={route.icon} />
+                            <TextInput
+                                style={route.input}
+                                value={startMove}
+                                onChangeText={setStartMove}
+                                placeholder="Start of movement"
+                                placeholderTextColor="#666"
+                            />
+                        </Animated.View>
 
-                    {(startMove && whereGoing) && (
-                        <TouchableOpacity onPress={addNewPlannedPlace}>
-                            <Image source={createPlaceBtn} />
-                        </TouchableOpacity>
-                    )}
-                </ScrollView>
-            )}
+                        <Animated.View 
+                            style={[
+                                { 
+                                    flexDirection: 'row', 
+                                    alignItems: 'center', 
+                                    marginBottom: 12 
+                                },
+                                {
+                                    opacity: inputAnimations.where,
+                                    transform: [
+                                        { 
+                                            translateX: inputAnimations.where.interpolate({
+                                                inputRange: [0, 1],
+                                                outputRange: [-50, 0]
+                                            }) 
+                                        }
+                                    ]
+                                }
+                            ]}
+                        >
+                            <Image source={wherearr} style={route.icon} />
+                            <TextInput
+                                style={route.input}
+                                value={whereGoing}
+                                onChangeText={setWhereGoing}
+                                placeholder="Where are we going?"
+                                placeholderTextColor="#666"
+                            />
+                        </Animated.View>
+
+                        {(startMove && whereGoing) && (
+                            <Animated.View
+                                style={{
+                                    opacity: fadeAnim,
+                                    transform: [{ scale: buttonScale }]
+                                }}
+                            >
+                                <TouchableOpacity
+                                    onPress={addNewPlannedPlace}
+                                    activeOpacity={0.7}
+                                >
+                                    <Image source={createPlaceBtn} style={route.saveButton} />
+                                </TouchableOpacity>
+                            </Animated.View>
+                        )}
+                        
+                        <View style={{height: 100}} />
+                    </ScrollView>
+                )}
+            </Animated.View>
         </View>
     );
 };

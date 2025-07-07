@@ -9,28 +9,31 @@ const useNorthernWingsNavigationTracker = () => {
 
     const navigateTo = useCallback(
         (routeName: keyof RootStackParamList) => {
-        navigation.navigate(routeName);
+            if (routeName !== activeRoute) {
+            navigation.navigate(routeName);
+            }
         },
-        [navigation]
+        [navigation, activeRoute]
     );
 
     useEffect(() => {
         const updateActiveRoute = () => {
-        const state = navigation.getState();
-
-        if (state && 'routes' in state && typeof state.index === 'number') {
-            const currentRoute = state.routes[state.index] as RouteProp<RootStackParamList>;
-            if (currentRoute?.name) {
-            setActiveRoute(currentRoute.name);
+            const state = navigation.getState?.();
+            if (state && state.routes && typeof state.index === 'number') {
+                const currentRoute = state.routes[state.index] as RouteProp<RootStackParamList>;
+                if (currentRoute?.name) {
+                    setActiveRoute(currentRoute.name);
+                }
             }
-        }
         };
 
         updateActiveRoute();
 
-        const unsubscribe = navigation.addListener('state', updateActiveRoute);
-        return unsubscribe;
-    }, [navigation]);
+        const unsubscribe = navigation.addListener?.('state', updateActiveRoute);
+            return () => {
+                if (unsubscribe) unsubscribe();
+            };
+        }, [navigation]);
 
     return {
         activeRoute,

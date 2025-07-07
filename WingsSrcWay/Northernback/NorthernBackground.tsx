@@ -11,13 +11,13 @@ const NorthernBackground: React.FC<NorthernBackgroundProps> = ({ route, nvgt }) 
     
     return (
         <ImageBackground source={back} style={{ flex: 1 }}>
-            <View>
+            <View style={{flex: 1}}>
 
-                <View style={{ flex: 1 }}>{route}</View>
+                <View style={{ width: '100%', height: '100%' }}>{route}</View>
 
                 {
                     nvgt && (
-                        <View>
+                        <View style={{width: '100%', position: 'absolute', bottom: 35, alignSelf: 'center', alignItems: 'center'}}>
                             <Wingsnvgt />
                         </View>
                     )

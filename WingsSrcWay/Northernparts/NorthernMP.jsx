@@ -4,22 +4,29 @@ import MapboxGL from '@rnmapbox/maps';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import wingsplaces from '../Northernconst/wingsplaces';
 import { saveBtn, savedBtn, shareSmall, pinLocation, readBtn, backarr } from '../Northernconst/wingsassts';
+import { card, common } from '../Northernconst/wingsstyles';
 
 const STORAGE_KEY = 'saved_places';
 
 const MapSight = ({ place, setReadplace }) => {
     return (
-        <View>
-            <Image source={place.image} />
-            <View>
-                <Text>{place.namer}</Text>
-                <View>
-                    <Image source={pinLocation} />
-                    <Text>{place.coordinates[0]}, {place.coordinates[1]}</Text>
+        <View style={[card.container, {position: 'absolute', alignSelf: 'center', top: 80, width: '90%'}]}>
+            <Image source={place.image} style={card.image} />
+            <View style={{width: '60%'}}>
+                <Text style={card.name} >{place.namer}</Text>
+                <View style={[common.row, {marginBottom: 11}]}>
+                    <Image source={pinLocation} style={card.pin}  />
+                    <Text style={card.coordinates} >{place.coordinates[0]}, {place.coordinates[1]}</Text>
                 </View>
-                <Text numberOfLines={2} ellipsizeMode='tail'>{place.description}</Text>
+                <Text
+                    numberOfLines={2}
+                    ellipsizeMode='tail'
+                    style={card.description} 
+                >
+                    {place.description}
+                </Text>
                 <TouchableOpacity onPress={() => setReadplace(true)}>
-                    <Image source={readBtn} />
+                    <Image source={readBtn} style={card.readBtn}  />
                 </TouchableOpacity>
             </View>
         </View>
@@ -41,7 +48,7 @@ const NorthernMP = () => {
         try {
             const saved = await AsyncStorage.getItem(STORAGE_KEY);
             const savedPlaces = saved ? JSON.parse(saved) : [];
-            const exists = savedPlaces.some(p => p.title === place.title);
+            const exists = savedPlaces.some(p => p.namer === place.namer);
             setIsPlaceSaved(exists);
         } catch (err) {
             console.error('Error checking saved place:', err);
@@ -55,7 +62,7 @@ const NorthernMP = () => {
             let savedPlaces = saved ? JSON.parse(saved) : [];
 
             if (isPlaceSaved) {
-                savedPlaces = savedPlaces.filter(p => p.title !== selectedMapSight.title);
+                savedPlaces = savedPlaces.filter(p => p.namer !== selectedMapSight.namer);
             } else {
                 savedPlaces.push(selectedMapSight);
             }
@@ -71,7 +78,7 @@ const NorthernMP = () => {
         if (!selectedMapSight) return;
         try {
             await Share.share({
-                message: `Check out this place: ${selectedMapSight.title}\nCoordinates: ${selectedMapSight.coordinates[0]}, ${selectedMapSight.coordinates[1]}\nDescription: ${selectedMapSight.description}`,
+                message: `Check out this place: ${selectedMapSight.namer}\nCoordinates: ${selectedMapSight.coordinates[0]}, ${selectedMapSight.coordinates[1]}\nDescription: ${selectedMapSight.description}`,
             });
         } catch (error) {
             console.error('Error sharing:', error);
@@ -83,27 +90,43 @@ const NorthernMP = () => {
             <Text>MAP</Text>
 
             {readPlace ? (
-                <View style={{width: '100%'}}>
-                    <TouchableOpacity onPress={() => { setReadplace(false);  setSelectedMapSight(null) }}>
-                        <Image source={backarr} />
+                <View style={[common.container, {paddingTop: 120}]}>
+                    <TouchableOpacity
+                        onPress={() => { setReadplace(false); setSelectedMapSight(null) }}
+                        style={common.back}
+                    >
+                        <Image source={backarr} style={common.backIcon} />
                     </TouchableOpacity>
                     
                     <ScrollView style={{ width: '100%' }}>
-                        <View>
-                            <Image source={selectedMapSight.image} />
-                            <View>
-                                <Image source={pinLocation} />
-                                <Text>{selectedMapSight.coordinates[0]}, {selectedMapSight.coordinates[1]}</Text>
+                        <View style={[card.container, {flexDirection: 'column'}]}>
+                            <Image
+                                source={selectedMapSight.image}
+                                style={[card.image, { width: '100%', marginBottom: 20 }]}
+                            />
+                            <View style={[common.row, {marginBottom: 20}]}>
+                                <Image source={pinLocation} style={[card.pin, {width: 26, height: 26}]} />
+                                <Text style={[card.coordinates, {fontSize: 13}]}>{selectedMapSight.coordinates[0]}, {selectedMapSight.coordinates[1]}</Text>
                             </View>
-                            <Text>DESCRIPTION</Text>
-                            <Text>{selectedMapSight.description}</Text>
+                            <Text style={card.name}>DESCRIPTION</Text>
+                            <Text style={[card.description, {fontSize: 13, marginBottom: 30}]}>{selectedMapSight.description}</Text>
 
-                            <View>
-                                <TouchableOpacity onPress={sharePlace}>
-                                    <Image source={shareSmall} />
+                            <View style={[common.row, {alignItems: 'center', justifyContent: 'flex-start'}]}>
+                                <TouchableOpacity
+                                    onPress={sharePlace}
+                                >
+                                    <Image
+                                        source={shareSmall}
+                                        style={{ width: 64, height: 64, resizeMode: 'contain', marginRight: 20 }}
+                                    />
                                 </TouchableOpacity>
-                                <TouchableOpacity onPress={toggleSavePlace}>
-                                    <Image source={isPlaceSaved ? savedBtn : saveBtn} />
+                                <TouchableOpacity
+                                    onPress={toggleSavePlace}
+                                >
+                                    <Image
+                                        source={isPlaceSaved ? savedBtn : saveBtn}
+                                        style={{ width: 64, height: 64, resizeMode: 'contain' }}
+                                    />
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -113,8 +136,8 @@ const NorthernMP = () => {
             ) : (
                 <MapboxGL.MapView style={{ flex: 1 }} styleURL={MapboxGL.StyleURL.Dark}>
                     <MapboxGL.Camera
-                        zoomLevel={4.5}
-                        centerCoordinate={[-106.3468, 56.1304]} // Centered on Canada
+                        zoomLevel={2}
+                        centerCoordinate={[-95.0, 49.0]}
                     />
                     {wingsplaces.map((place, index) => (
                         place.coordinates && (
@@ -127,11 +150,11 @@ const NorthernMP = () => {
                                 }
                             >
                                 <View style={{
-                                    borderColor: '#E934C4',
-                                    borderWidth: 7,
-                                    backgroundColor: '#fff',
-                                    width: 30,
-                                    height: 30,
+                                    borderWidth: 2,
+                                    borderColor: '#fff',
+                                    backgroundColor: '#272727',
+                                    width: 25,
+                                    height: 25,
                                     borderRadius: 100
                                 }} />
                             </MapboxGL.PointAnnotation>
