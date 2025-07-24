@@ -1,16 +1,16 @@
 workflows:
   sample-workflow:
-    name: Northern Wings Eagle Way
+    name: 'NorthernWINGS: The Eagle Way'
     max_build_duration: 120
     instance_type: mac_mini_m1
     integrations:
-      app_store_connect: Northern Wings Eagle Way API key
+      app_store_connect: NorthernWINGS API key
     environment:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.northern.wings.eagle.way2025
       vars:
-        APP_STORE_APPLE_ID: 6747538974 #change
+        APP_STORE_APPLE_ID: 6749052071
         BUNDLE_ID: 'com.northern.wings.eagle.way2025'
         XCODE_WORKSPACE: 'NorthernWingsEaglWay.xcworkspace'
         XCODE_SCHEME: 'NorthernWingsEaglWay'
@@ -30,7 +30,7 @@ workflows:
           #!/bin/sh
           cd $CM_BUILD_DIR/ios
           LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID")
-          agvtool new-version -all 11
+          agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
       - name: Set Info.plist values
         script: |
           PLIST=$CM_BUILD_DIR/ios/AwesomeProject/Info.plist
@@ -50,4 +50,4 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_app_store: true
-        copyright: Northern Wings Eagle Way 2025
+        copyright: 'NorthernWINGS: The Eagle Way 2025'

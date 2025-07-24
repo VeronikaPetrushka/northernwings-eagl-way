@@ -1,0 +1,17 @@
+Title: NorthernWINGS: The Eagle Way
+
+Description: 
+
+Discover Canada with a personal guide!
+NorthernWINGS is your interactive travel guide to the most picturesque places in Canada.
+The application will help you find unique locations, save your favorites, build routes and plan unforgettable trips.
+
+What's inside:
+• Popular places with photos, descriptions and coordinates
+• Interactive map with filters
+• Function to save favorite points
+• Build your own route
+• Randomizer of places - if you don't know where to go
+
+Download and discover the real Canada - from the north to the west, from cities to wild forests.
+Your adventure starts here!
